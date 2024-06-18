@@ -60,22 +60,28 @@ const ProductCard = ({
           <h5 className="text-base text-white">Qty: {stock}</h5>
         </div>
         <p className="text-lg mb-4">₹{price}</p>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center border rounded border-gray-500 overflow-hidden">
-            <button
-              onClick={handleDecrease}
-              className="bg-yellow-500 text-black px-2 py-1 hover:bg-yellow-600 font-bold"
-            >
-              -
-            </button>
-            <span className="px-4 py-1 bg-white text-black">{quantity}</span>
-            <button
-              onClick={handleIncrease}
-              className="bg-yellow-500 text-black px-2 py-1 hover:bg-yellow-600 font-bold"
-            >
-              +
-            </button>
-          </div>
+        <div
+          className={`flex items-center ${
+            addToCart ? "justify-between" : "justify-center"
+          } mb-4`}
+        >
+          {addToCart && (
+            <div className="flex items-center border rounded border-gray-500 overflow-hidden">
+              <button
+                onClick={handleDecrease}
+                className="bg-yellow-500 text-black px-2 py-1 hover:bg-yellow-600 font-bold"
+              >
+                -
+              </button>
+              <span className="px-4 py-1 bg-white text-black">{quantity}</span>
+              <button
+                onClick={handleIncrease}
+                className="bg-yellow-500 text-black px-2 py-1 hover:bg-yellow-600 font-bold"
+              >
+                +
+              </button>
+            </div>
+          )}
           <button
             onClick={handleAddToCart}
             className="bg-yellow-500 text-black rounded px-4 py-2 hover:bg-yellow-600"

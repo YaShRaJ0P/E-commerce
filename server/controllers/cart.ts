@@ -48,3 +48,16 @@ export const RemoveFromCart = async (req: Request, res: Response): Promise<Respo
         return res.status(500).send({ message: "Server Error." });
     }
 };
+
+export const UpdateQuantity = async (req: Request, res: Response): Promise<Response> => {
+    try {
+        const quantity = req.body.quantity;
+        const result = await Cart.findByIdAndUpdate(req.params.id, quantity);
+        if (!result) {
+            return res.status(404).send({ message: "Product not found." });
+        }
+        return res.status(200).send({ message: "Quantity Updated" });
+    } catch (err) {
+        return res.status(500).send({ message: "Server Error." });
+    }
+};
