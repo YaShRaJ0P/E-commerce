@@ -1,5 +1,23 @@
-import { Schema, Document, model } from 'mongoose';
+import { Schema, Document, model, CallbackError } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { IProduct } from './productModel';
+
+export interface ICart extends Document {
+    productId: Schema.Types.ObjectId;
+    quantity: number;
+}
+
+const cartSchema = new Schema<ICart>({
+    productId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Product',
+        required: true
+    },
+    quantity: {
+        type: Number,
+        required: true
+    },
+});
 
 // Interface representing a user document in MongoDB
 export interface IUser extends Document {
@@ -7,8 +25,8 @@ export interface IUser extends Document {
     email: string;
     password: string;
     isAdmin: boolean;
-    cartsList: Schema.Types.ObjectId[];
     token?: string;
+    cartsList: Array<{ productId: IProduct; quantity: number }>;
     matchPassword: (enteredPassword: string) => Promise<boolean>;
 }
 
@@ -32,12 +50,7 @@ const userSchema = new Schema<IUser>(
             type: Boolean,
             default: false,
         },
-        cartsList: [
-            {
-                type: Schema.Types.ObjectId,
-                ref: 'Cart'
-            }
-        ],
+        cartsList: [cartSchema],
     },
     {
         timestamps: true,
@@ -45,18 +58,22 @@ const userSchema = new Schema<IUser>(
 );
 
 // Password encryption before saving the user model
-userSchema.pre('save', async function (next) {
+userSchema.pre<IUser>('save', async function (next) {
     if (!this.isModified('password')) {
-        next();
+        return next();
     }
 
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (err) {
+        next(err as CallbackError);
+    }
 });
-
 // Method to match user entered password with hashed password
 userSchema.methods.matchPassword = async function (enteredPassword: string): Promise<boolean> {
-    return await bcrypt.compare(enteredPassword, this.password);
+    return bcrypt.compare(enteredPassword, this.password);
 };
 
 // Creating the user model from the schema

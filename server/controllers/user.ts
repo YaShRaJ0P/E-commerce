@@ -5,11 +5,19 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+interface AuthRequest extends Request {
+    user?: {
+        user_id: string;
+        email: string;
+        username: string;
+    };
+}
+
 const createToken = (user: any) => {
     if (!process.env.TOKEN_KEY)
         throw new Error('Token key is not defined');
     return jwt.sign(
-        { user_id: user._id, email: user.email },
+        { user_id: user._id, email: user.email, username: user.username },
         process.env.TOKEN_KEY,
     );
 };
@@ -38,12 +46,12 @@ export const SignUp = async (req: Request, res: Response): Promise<Response> => 
 
         // Set user token in cookie
         res.cookie('token', token, {
-            httpOnly: true,
+            // httpOnly: true,
             // secure: process.env.NODE_ENV === 'production' 
         });
-
+        res.redirect("/");
         // Send user info back to client
-        return res.status(201).json(token);
+        return res.status(200).json({ message: 'Logged in successfully', username: user.username, id: user._id, token });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: "Server Error" });
@@ -66,13 +74,16 @@ export const LogIn = async (req: Request, res: Response): Promise<Response> => {
             const token = createToken(user);
 
             // Set user token in cookie
-            res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
-
+            res.cookie('token', token, {
+                // httpOnly: true,
+                //  secure: process.env.NODE_ENV === 'production'
+            });
+            // res.redirect("/");
             // Send user info back to client
-            return res.status(200).json(user);
+            return res.status(201).json({ message: 'User logged in successfully', username: user.username, id: user._id, token });
         }
-
-        return res.status(401).json({ message: "Invalid Credentials" });
+        else
+            return res.status(401).json({ message: "Invalid Credentials" });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: "Server Error" });
@@ -105,3 +116,7 @@ export const DeleteUser = async (req: Request, res: Response): Promise<Response>
         return res.status(500).json({ message: "Server Error" });
     }
 };
+
+export const checkAuthentication = async (req: AuthRequest, res: Response): Promise<Response> => {
+    return res.status(200).json({ username: req.user!.username, id: req.user!.user_id });
+}

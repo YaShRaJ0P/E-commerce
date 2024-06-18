@@ -28,21 +28,30 @@ const ProductCard = ({
 
     try {
       if (addToCart) {
-        const response = await axios.post("http://localhost:5555/cart", {
-          id,
-          quantity,
-        });
+        const response = await axios.post(
+          "http://localhost:5555/cart",
+          {
+            id,
+            quantity,
+          },
+          {
+            withCredentials: true,
+          }
+        );
         setCartProductId(response.data.id);
       } else {
         if (cartProductId) {
-          await axios.delete(`http://localhost:5555/cart/${cartProductId}`);
+          await axios.delete(`http://localhost:5555/cart/${cartProductId}`, {
+            withCredentials: true,
+          });
           setCartProductId(null);
+          setQuantity(0);
         }
       }
       setAddToCart(!addToCart);
       setError(null);
     } catch (err) {
-      setError("Failed to update cart. Please try again.");
+      setError("Please Login.");
       console.error(err);
     }
   };

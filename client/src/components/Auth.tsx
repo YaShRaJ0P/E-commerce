@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import axios from "axios";
+import Cookies from "js-cookie";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setUser } from "@/utils/userStore";
 
 const Auth = () => {
+  const dispatch = useDispatch();
   const [isLoginView, setIsLoginView] = useState(true);
   const [formData, setFormData] = useState({
     username: "",
@@ -9,6 +14,7 @@ const Auth = () => {
     password: "",
   });
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const toggleView = () => {
     setIsLoginView(!isLoginView);
@@ -26,13 +32,36 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
+      let response;
       if (isLoginView) {
-        await axios.post("http://localhost:5555/auth/login", formData);
-        alert("User logged in successfully");
+        response = await axios.post(
+          "http://localhost:5555/auth/login",
+          formData,
+          {
+            withCredentials: true,
+          }
+        );
       } else {
-        await axios.post("http://localhost:5555/auth/signup", formData);
-        alert("User registered successfully");
+        response = await axios.post(
+          "http://localhost:5555/auth/signup",
+          formData,
+          {
+            withCredentials: true,
+          }
+        );
       }
+
+      dispatch(
+        setUser({ username: response.data.username, userId: response.data.id })
+      );
+
+      Cookies.set("token", response.data.token, {
+        expires: 1,
+        sameSite: "Strict",
+      }); // Set the token cookie
+
+      alert(`User ${isLoginView ? "logged in" : "registered"} successfully`);
+      navigate("/"); // Redirect to home or another page after successful login/signup
     } catch (error) {
       setError("Failed to authenticate. Please try again.");
       console.error("Error:", error);
@@ -103,14 +132,20 @@ const Auth = () => {
           {isLoginView ? (
             <>
               Don't have an account?{" "}
-              <button className="text-yellow-500 underline" onClick={toggleView}>
+              <button
+                className="text-yellow-500 underline"
+                onClick={toggleView}
+              >
                 Sign Up
               </button>
             </>
           ) : (
             <>
               Already have an account?{" "}
-              <button className="text-yellow-500 underline" onClick={toggleView}>
+              <button
+                className="text-yellow-500 underline"
+                onClick={toggleView}
+              >
                 Login
               </button>
             </>

@@ -1,11 +1,15 @@
-export interface Cart {
-    _id: string,
-    name: string,
-    price: number,
-    quantity: number,
-    image: string,
-    category: string,
-    productId: string
+export interface Product {
+    _id: string;
+    name: string;
+    price: number;
+    stock: number;
+    image: string;
+    category: string;
 }
 
-export type CartList = Cart[];
+export interface CartItem {
+    product: Product;
+    quantity: number;
+}
+
+export type CartList = CartItem[];

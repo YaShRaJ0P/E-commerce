@@ -9,6 +9,7 @@ import Product from "./models/productModel";
 import { getFilteredProducts } from './controllers/filter';
 import userRoute from "./routes/userRoute";
 import cookieParser from 'cookie-parser';
+import authMiddleware from './middlewares/auth.middleware';
 
 dotenv.config();
 
@@ -20,19 +21,24 @@ const app = express();
 //     allowedHeaders: ["Content-Type"],
 //     credentials: true,
 // };
+const allowedOrigins = ['http://localhost:5173']; // Frontend origin
 
-app.use(cors());
+const corsOptions = {
+  origin: allowedOrigins,
+  credentials: true,
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static("images"))
 app.use(cookieParser());
-
+app.use(express.urlencoded({ extended: true }))
 
 app.get("/", (req, res) => {
   res.send("Server is running.");
 });
 
 app.use("/products", productsRoute);
-app.use("/cart", cartRoute);
+app.use("/cart", authMiddleware, cartRoute);
 app.get("/filter", (req: Request, res: Response) => getFilteredProducts(req, res));
 app.get("/category", async (req: Request, res: Response): Promise<Response> => {
   try {
