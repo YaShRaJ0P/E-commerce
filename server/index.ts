@@ -1,37 +1,31 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 import productsRoute from "./routes/productsRoute";
 import cartRoute from "./routes/cartRoute";
-import { Request, Response } from 'express';
 import Product from "./models/productModel";
 import { getFilteredProducts } from './controllers/filter';
 import userRoute from "./routes/userRoute";
 import cookieParser from 'cookie-parser';
 import authMiddleware from './middlewares/auth.middleware';
-
+import paymentRoute from "./routes/paymentRoute";
 dotenv.config();
 
 const app = express();
 
-// const corsOptions = {
-//     origin: "https://bookstore-frontend-two.vercel.app",
-//     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-//     allowedHeaders: ["Content-Type"],
-//     credentials: true,
-// };
 const allowedOrigins = ['http://localhost:5173']; // Frontend origin
 
 const corsOptions = {
   origin: allowedOrigins,
   credentials: true,
 };
+
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(express.static("images"))
+app.use(express.static("images"));
 app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }))
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
   res.send("Server is running.");
@@ -49,6 +43,20 @@ app.get("/category", async (req: Request, res: Response): Promise<Response> => {
   }
 });
 app.use("/auth", userRoute);
+app.use("/payment", paymentRoute);
+
+app.get("/config", async (req: Request, res: Response): Promise<Response> => {
+  try {
+    console.log(process.env.STRIPE_PUBLISHABLE_KEY);
+    if (!process.env.STRIPE_PUBLISHABLE_KEY) {
+      throw new Error("STRIPE_PUBLISHABLE_KEY is not defined in the environment variables");
+    }
+    return res.status(200).send({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY });
+  } catch (error) {
+    console.error("Error in /config route:", error);
+    return res.status(500).send({ message: "Server Error." });
+  }
+});
 
 mongoose.set("strictQuery", false);
 mongoose
