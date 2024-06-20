@@ -5,21 +5,20 @@ import { CartList } from "@/interface/cartInterface";
 
 const CartPage: React.FC = () => {
   const [cartProductList, setCartProductList] = useState<CartList>([]);
+  const fetchCartProducts = async () => {
+    try {
+      const response = await axios.get("http://localhost:5555/cart", {
+        withCredentials: true,
+      });
+      console.log(response.data.cartProducts);
+
+      setCartProductList(response.data.cartProducts);
+    } catch (error) {
+      console.error("Error fetching cart products:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchCartProducts = async () => {
-      try {
-        const response = await axios.get("http://localhost:5555/cart", {
-          withCredentials: true,
-        });
-        console.log(response.data.cartProducts);
-
-        setCartProductList(response.data.cartProducts);
-      } catch (error) {
-        console.error("Error fetching cart products:", error);
-      }
-    };
-
     fetchCartProducts();
   }, []);
 
@@ -32,9 +31,7 @@ const CartPage: React.FC = () => {
         }
       );
       console.log(res.data.message);
-      setCartProductList((prevList) =>
-        prevList.filter((cartProduct) => cartProduct.product._id !== productId)
-      );
+      fetchCartProducts();
     } catch (error) {
       console.error("Error removing item from cart:", error);
     }

@@ -58,10 +58,10 @@ const Auth = () => {
       Cookies.set("token", response.data.token, {
         expires: 1,
         sameSite: "Strict",
-      }); // Set the token cookie
+      });
 
       alert(`User ${isLoginView ? "logged in" : "registered"} successfully`);
-      navigate("/"); // Redirect to home or another page after successful login/signup
+      navigate("/");
     } catch (error) {
       setError("Failed to authenticate. Please try again.");
       console.error("Error:", error);

@@ -1,5 +1,14 @@
 import axios from "axios";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Cookies from "js-cookie";
+import { useSelector } from "react-redux";
+import { RootState } from "@/utils/appStore";
+interface CartItem {
+  product: {
+    _id: string;
+  };
+  quantity: number;
+}
 
 const ProductCard = ({
   name,
@@ -18,9 +27,50 @@ const ProductCard = ({
   const [addToCart, setAddToCart] = useState(true);
   const [cartProductId, setCartProductId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const user = useSelector((state: RootState) => state.user);
 
-  const handleIncrease = () =>
+  useEffect(() => {
+    const fetchCartData = async () => {
+      try {
+        const token = Cookies.get("token");
+
+        if (!token) {
+          setAddToCart(true);
+          setQuantity(0);
+          return;
+        }
+
+        const response = await axios.get("http://localhost:5555/cart", {
+          withCredentials: true,
+        });
+
+        const cartItems: CartItem[] = response.data.cartProducts;
+
+        const cartItem = cartItems.find(
+          (item: CartItem) => item.product._id === id
+        );
+
+        if (cartItem) {
+          setQuantity(cartItem.quantity);
+          setAddToCart(false);
+          setCartProductId(cartItem.product._id);
+        }
+      } catch (err) {
+        console.error("Error fetching cart data:", err);
+      }
+    };
+
+    fetchCartData();
+  }, [user]);
+
+  const handleIncrease = () => {
+    const token = Cookies.get("token");
+    if (!token) {
+      setError("Please Login");
+      return;
+    }
     setQuantity(quantity < stock ? quantity + 1 : quantity);
+  };
   const handleDecrease = () => setQuantity(quantity > 0 ? quantity - 1 : 0);
 
   const handleAddToCart = async () => {
@@ -52,7 +102,7 @@ const ProductCard = ({
       setError(null);
     } catch (err) {
       setError("Please Login.");
-      console.error(err);
+      console.error("Error adding/removing product to/from cart:", err);
     }
   };
 

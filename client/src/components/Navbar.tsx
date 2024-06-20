@@ -5,20 +5,19 @@ import { FaUser, FaShoppingCart } from "react-icons/fa";
 import { MdLogout } from "react-icons/md";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setUser } from "@/utils/userStore";
+import { RootState } from "@/utils/appStore";
 
 export const Navbar = () => {
   const [dropdown, setDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [username, setUsername] = useState("");
   const dispatch = useDispatch();
+  const username = useSelector((state: RootState) => state.user.username);
 
   useEffect(() => {
     const checkAuth = async () => {
       const token = Cookies.get("token");
-      console.log(token);
-
       if (!token) {
         return;
       }
@@ -27,17 +26,19 @@ export const Navbar = () => {
         const response = await axios.get("http://localhost:5555/auth/check", {
           withCredentials: true,
         });
-        console.log(response);
-
-        setUser({ username: response.data.username, userId: response.data.id });
-        setUsername(response.data.username);
+        dispatch(
+          setUser({
+            username: response.data.username,
+            userId: response.data.id,
+          })
+        );
       } catch (error) {
         console.error("Error checking auth:", error);
       }
     };
 
     checkAuth();
-  }, [username, dispatch]);
+  }, [dispatch]);
 
   const handleBlur = () => {
     setTimeout(() => {
@@ -76,7 +77,7 @@ export const Navbar = () => {
         { withCredentials: true }
       );
       Cookies.remove("token");
-      setUser({ username: "", userId: "" });
+      dispatch(setUser({ username: "", userId: "" }));
     } catch (error) {
       console.error("Error logging out:", error);
     }
