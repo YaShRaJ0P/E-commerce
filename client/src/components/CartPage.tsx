@@ -132,7 +132,7 @@ const CartPage: React.FC = () => {
       )}
       {cartProductList.length > 0 && (
         <div className="text-right mt-6">
-          <Link to="/checkout">
+          <Link to="/pay">
             <span className="bg-yellow-500 text-gray-900 px-6 py-2 rounded-md">
               Proceed to Checkout
             </span>

@@ -25,7 +25,7 @@ const App = () => {
         <Route path="/admin" element={<Admin />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path={"/pay"} element={<Payment />}></Route>
+        <Route path="/pay" element={<Payment />} />
       </Routes>
     </main>
   );

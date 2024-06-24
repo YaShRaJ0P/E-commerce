@@ -1,5 +1,7 @@
 import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { useState, FormEvent } from "react";
+import axios from "axios";
+import { redirect } from "react-router-dom";
 
 interface CheckoutFormProps {
   clientSecret: string;
@@ -38,6 +40,14 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ clientSecret }) => {
       setError(null);
       setProcessing(false);
       setPaymentSucceeded(true);
+      await axios.post(
+        "http://localhost:5555/cart/empty",
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+      redirect("/");
     }
   };
 

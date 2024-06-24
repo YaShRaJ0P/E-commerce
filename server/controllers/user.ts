@@ -118,5 +118,6 @@ export const DeleteUser = async (req: Request, res: Response): Promise<Response>
 };
 
 export const checkAuthentication = async (req: AuthRequest, res: Response): Promise<Response> => {
+    console.log(req.user);
     return res.status(200).json({ username: req.user!.username, id: req.user!.user_id });
 }

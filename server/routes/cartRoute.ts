@@ -1,10 +1,5 @@
 import express, { Request, Response } from "express";
-import {
-    AddToCart,
-    GetCartProducts,
-    RemoveFromCart,
-    UpdateQuantity
-} from "../controllers/cart";
+import { AddToCart, GetCartProducts, RemoveFromCart, UpdateQuantity, emptyCart } from '../controllers/cart';
 
 const router = express.Router();
 
@@ -19,5 +14,8 @@ router.delete("/:id", (req: Request, res: Response) => RemoveFromCart(req, res))
 
 //Route to update quantity
 router.patch("/:id", (req: Request, res: Response) => UpdateQuantity(req, res));
+
+//Route to empty cart
+router.post("/empty", (req: Request, res: Response) => emptyCart(req, res));
 
 export default router;

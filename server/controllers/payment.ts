@@ -1,7 +1,16 @@
 import { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import Stripe from 'stripe';
+import User from '../models/userModel';
 dotenv.config();
+
+interface AuthRequest extends Request {
+    user?: {
+        user_id: string;
+        email: string;
+        username: string;
+    };
+}
 
 const stripe = new Stripe(process.env.STRIPE_API_KEY!, {
     apiVersion: '2024-04-10',
@@ -23,7 +32,7 @@ interface Token {
     };
 }
 
-export const Payment = async (req: Request, res: Response): Promise<Response> => {
+export const Payment = async (req: AuthRequest, res: Response): Promise<Response> => {
     try {
         const { product, token }: { product: Product; token: Token } = req.body;
 
@@ -45,7 +54,6 @@ export const Payment = async (req: Request, res: Response): Promise<Response> =>
             //     },
             // },
         });
-
         return res.status(200).send({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
         console.log(error);

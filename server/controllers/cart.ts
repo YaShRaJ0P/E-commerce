@@ -147,3 +147,19 @@ export const UpdateQuantity = async (req: AuthRequest, res: Response): Promise<R
         return res.status(500).json({ message: "Server Error." });
     }
 };
+
+export const emptyCart = async (req: AuthRequest, res: Response): Promise<Response> => {
+    try {
+        const userId = req.user!.user_id;
+        console.log(userId);
+        const user = await User.findById(userId).populate('cartsList.productId');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        user.cartsList = [];
+        await user.save();
+        return res.status(200);
+    } catch (error) {
+        return res.status(400).send({ message: "Server Error" });
+    }
+}
