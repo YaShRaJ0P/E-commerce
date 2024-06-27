@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import Stripe from 'stripe';
-import User from '../models/userModel';
 dotenv.config();
 
 interface AuthRequest extends Request {
@@ -16,8 +15,17 @@ const stripe = new Stripe(process.env.STRIPE_API_KEY!, {
     apiVersion: '2024-04-10',
 });
 
-interface Product {
+interface ProductItem {
+    _id: string;
     name: string;
+    price: number;
+    stock: number;
+    image: string;
+    category: string;
+}
+
+interface Product {
+    items: ProductItem[];
     price: number;
 }
 
@@ -36,11 +44,14 @@ export const Payment = async (req: AuthRequest, res: Response): Promise<Response
     try {
         const { product, token }: { product: Product; token: Token } = req.body;
 
+        // Generate a description from product items
+        const productDescription = product.items.map(item => `${item._id} (x${item.stock})`).join(', ');
+
         const paymentIntent = await stripe.paymentIntents.create({
             amount: product.price,
             currency: 'inr',
             receipt_email: token.email,
-            description: `Purchased the ${product.name}`,
+            description: productDescription,
             automatic_payment_methods: {
                 enabled: true,
             },
@@ -54,6 +65,7 @@ export const Payment = async (req: AuthRequest, res: Response): Promise<Response
             //     },
             // },
         });
+
         return res.status(200).send({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
         console.log(error);

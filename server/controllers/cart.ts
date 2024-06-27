@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import Product from '../models/productModel';
-import User, { ICart } from '../models/userModel';
+import User from '../models/userModel';
 import { AuthRequest } from '../middlewares/auth.middleware';
 
 export const AddToCart = async (req: AuthRequest, res: Response): Promise<Response> => {

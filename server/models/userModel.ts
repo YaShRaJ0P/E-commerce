@@ -1,23 +1,9 @@
 import { Schema, Document, model, CallbackError } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { IProduct } from './productModel';
+import { cartSchema } from './cartModel';
 
-export interface ICart extends Document {
-    productId: Schema.Types.ObjectId;
-    quantity: number;
-}
 
-const cartSchema = new Schema<ICart>({
-    productId: {
-        type: Schema.Types.ObjectId,
-        ref: 'Product',
-        required: true
-    },
-    quantity: {
-        type: Number,
-        required: true
-    },
-});
 
 // Interface representing a user document in MongoDB
 export interface IUser extends Document {

@@ -3,12 +3,15 @@ import { Elements } from "@stripe/react-stripe-js";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import CheckoutForm from "./CheckOutForm";
+import { useSelector } from "react-redux";
+import { RootState } from "@/utils/appStore";
 
 const Payment = () => {
   const [stripePromise, setStripePromise] =
     useState<Promise<Stripe | null> | null>(null);
   const [clientSecret, setClientSecret] = useState<string>("");
-
+  const totalPrice = useSelector((state: RootState) => state.cart.totalPrice);
+  const cartItems = useSelector((state: RootState) => state.cart.items);
   useEffect(() => {
     axios
       .get("http://localhost:5555/config")
@@ -23,7 +26,7 @@ const Payment = () => {
 
     axios
       .post("http://localhost:5555/payment", {
-        product: { name: "Sample Product", price: 1000 },
+        product: { items: cartItems, price: totalPrice },
         token: { email: "customer@example.com" },
       })
       .then((res) => {

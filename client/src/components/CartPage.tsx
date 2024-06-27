@@ -1,58 +1,63 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { CartList } from "@/interface/cartInterface";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/utils/appStore";
+import {
+  setCart,
+  removeItemFromCart,
+  updateItemQuantity,
+  setTotalPrice,
+} from "@/utils/cartStore";
+import { CartItem } from "@/interface/cartInterface";
 
 const CartPage: React.FC = () => {
-  const [cartProductList, setCartProductList] = useState<CartList>([]);
-  const fetchCartProducts = async () => {
-    try {
-      const response = await axios.get("http://localhost:5555/cart", {
-        withCredentials: true,
-      });
-      console.log(response.data.cartProducts);
-
-      setCartProductList(response.data.cartProducts);
-    } catch (error) {
-      console.error("Error fetching cart products:", error);
-    }
-  };
+  const dispatch = useDispatch();
+  const { items: cartProductList, totalPrice } = useSelector(
+    (state: RootState) => state.cart
+  );
 
   useEffect(() => {
-    fetchCartProducts();
-  }, []);
-
-  const removeFromCart = async (productId: string) => {
-    try {
-      const res = await axios.delete(
-        `http://localhost:5555/cart/${productId}`,
-        {
+    const fetchCartProducts = async () => {
+      try {
+        const { data } = await axios.get("http://localhost:5555/cart", {
           withCredentials: true,
-        }
-      );
-      console.log(res.data.message);
-      fetchCartProducts();
+        });
+        const cartItems = data.cartProducts;
+        const price = cartItems.reduce(
+          (sum: number, item: CartItem) =>
+            sum + item.product.price * item.quantity,
+          0
+        );
+        dispatch(setCart(cartItems));
+        dispatch(setTotalPrice(price));
+      } catch (error) {
+        console.error("Error fetching cart products:", error);
+      }
+    };
+
+    fetchCartProducts();
+  }, [dispatch]);
+
+  const handleRemoveFromCart = async (productId: string) => {
+    try {
+      await axios.delete(`http://localhost:5555/cart/${productId}`, {
+        withCredentials: true,
+      });
+      dispatch(removeItemFromCart(productId));
     } catch (error) {
       console.error("Error removing item from cart:", error);
     }
   };
 
-  const updateQuantity = async (id: string, quantity: number) => {
+  const handleUpdateQuantity = async (id: string, quantity: number) => {
     try {
       await axios.patch(
         `http://localhost:5555/cart/${id}`,
         { quantity },
-        {
-          withCredentials: true,
-        }
+        { withCredentials: true }
       );
-      setCartProductList((prevList) =>
-        prevList.map((cartProduct) =>
-          cartProduct.product._id === id
-            ? { ...cartProduct, quantity }
-            : cartProduct
-        )
-      );
+      dispatch(updateItemQuantity({ id, quantity }));
     } catch (error) {
       console.error("Error updating quantity:", error);
     }
@@ -93,14 +98,14 @@ const CartPage: React.FC = () => {
               <div className="flex items-center">
                 <button
                   className="bg-red-500 text-white px-3 py-1 rounded-md mr-2"
-                  onClick={() => removeFromCart(cartProduct.product._id)}
+                  onClick={() => handleRemoveFromCart(cartProduct.product._id)}
                 >
                   Remove
                 </button>
                 <div className="flex items-center border rounded border-gray-500 overflow-hidden">
                   <button
                     onClick={() =>
-                      updateQuantity(
+                      handleUpdateQuantity(
                         cartProduct.product._id,
                         cartProduct.quantity - 1
                       )
@@ -115,7 +120,7 @@ const CartPage: React.FC = () => {
                   </span>
                   <button
                     onClick={() =>
-                      updateQuantity(
+                      handleUpdateQuantity(
                         cartProduct.product._id,
                         cartProduct.quantity + 1
                       )
@@ -131,7 +136,8 @@ const CartPage: React.FC = () => {
         </div>
       )}
       {cartProductList.length > 0 && (
-        <div className="text-right mt-6">
+        <div className="text-right mt-6 flex flex-col gap-2">
+          <span>{totalPrice > 0 && "Total Price : ₹" + totalPrice}</span>
           <Link to="/pay">
             <span className="bg-yellow-500 text-gray-900 px-6 py-2 rounded-md">
               Proceed to Checkout
