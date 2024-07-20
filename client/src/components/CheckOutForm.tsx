@@ -1,7 +1,7 @@
 import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { useState, FormEvent } from "react";
 import axios from "axios";
-import { redirect } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface CheckoutFormProps {
   clientSecret: string;
@@ -10,6 +10,7 @@ interface CheckoutFormProps {
 const CheckoutForm: React.FC<CheckoutFormProps> = ({ clientSecret }) => {
   const stripe = useStripe();
   const elements = useElements();
+  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState<boolean>(false);
   const [paymentSucceeded, setPaymentSucceeded] = useState<boolean>(false);
@@ -37,6 +38,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ clientSecret }) => {
       setError(`Payment failed: ${error.message}`);
       setProcessing(false);
     } else {
+      navigate("/");
       setError(null);
       setProcessing(false);
       setPaymentSucceeded(true);
@@ -47,7 +49,6 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ clientSecret }) => {
           withCredentials: true,
         }
       );
-      redirect("/");
     }
   };
 

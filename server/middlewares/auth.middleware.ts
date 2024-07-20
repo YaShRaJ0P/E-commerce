@@ -14,7 +14,6 @@ const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction): vo
 
     if (!token) {
         res.status(401).json({ message: 'Access denied. No token provided.' });
-        console.log("No token");
         return;
     }
 

@@ -1,15 +1,10 @@
 import { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import Stripe from 'stripe';
-dotenv.config();
+import mongoose from 'mongoose';
+import ProductModel from '../models/productModel';
 
-interface AuthRequest extends Request {
-    user?: {
-        user_id: string;
-        email: string;
-        username: string;
-    };
-}
+dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_API_KEY!, {
     apiVersion: '2024-04-10',
@@ -24,8 +19,13 @@ interface ProductItem {
     category: string;
 }
 
+interface CartItem {
+    product: ProductItem;
+    quantity: number;
+}
+
 interface Product {
-    items: ProductItem[];
+    items: CartItem[];
     price: number;
 }
 
@@ -40,35 +40,85 @@ interface Token {
     };
 }
 
-export const Payment = async (req: AuthRequest, res: Response): Promise<Response> => {
-    try {
-        const { product, token }: { product: Product; token: Token } = req.body;
+export const Payment = async (req: Request, res: Response): Promise<Response> => {
+    const MAX_RETRIES = 5;
+    let retryCount = 0;
 
-        // Generate a description from product items
-        const productDescription = product.items.map(item => `${item._id} (x${item.stock})`).join(', ');
+    const executeTransaction = async (): Promise<Response> => {
+        const session = await mongoose.startSession();
+        session.startTransaction();
 
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: product.price,
-            currency: 'inr',
-            receipt_email: token.email,
-            description: productDescription,
-            automatic_payment_methods: {
-                enabled: true,
-            },
-            // shipping: {
-            //     name: token.card.name,
-            //     address: {
-            //         line1: token.card.address_line1,
-            //         city: token.card.address_city,
-            //         country: token.card.address_country,
-            //         postal_code: token.card.address_zip,
-            //     },
-            // },
-        });
+        try {
+            const { product, token }: { product: Product; token: Token } = req.body;
 
-        return res.status(200).send({ clientSecret: paymentIntent.client_secret });
-    } catch (error) {
-        console.log(error);
-        return res.status(400).send({ message: 'Payment failed.' });
-    }
+            if (!product.items || product.items.length === 0 || product.price <= 0) {
+                return res.status(400).send({ message: 'Invalid product data' });
+            }
+
+            // Convert amount to smallest currency unit (e.g., paise for INR)
+            const amount = Math.round(product.price * 100); // Convert INR to paise
+
+            // Ensure amount is above minimum charge amount (e.g., ₹1)
+            if (amount < 100) {
+                return res.status(400).send({ message: 'Amount is below the minimum charge amount.' });
+            }
+
+
+            const productDescriptions: string[] = [];
+            for (const item of product.items) {
+                const productToUpdate = await ProductModel.findById(item.product._id);
+                if (!productToUpdate) {
+                    throw new Error(`Product with ID ${item.product._id} not found`);
+                }
+                productToUpdate.stock -= item.quantity;
+                if (productToUpdate.stock < 0) {
+                    throw new Error(`Not enough stock for product ID ${item.product._id}`);
+                }
+                await productToUpdate.save();
+                productDescriptions.push(`${item.product._id} (x${item.quantity})`);
+            }
+            const productDescription = productDescriptions.join(', ');
+
+
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount,
+                currency: 'inr',
+                receipt_email: token.email,
+                description: productDescription,
+                automatic_payment_methods: {
+                    enabled: true,
+                },
+            });
+
+            await session.commitTransaction();
+            return res.status(200).send({ clientSecret: paymentIntent.client_secret });
+        } catch (error) {
+            await session.abortTransaction();
+            console.error('Error processing payment:', error);
+
+            if (error instanceof mongoose.Error && error.message.includes('Write conflict')) {
+                retryCount++;
+                if (retryCount < MAX_RETRIES) {
+                    const backoffDelay = Math.pow(2, retryCount) * 100 + Math.random() * 100; // Exponential backoff with jitter
+                    console.log(`Retrying transaction... Attempt ${retryCount}, waiting ${backoffDelay}ms`);
+                    await new Promise(res => setTimeout(res, backoffDelay));
+                    return await executeTransaction();
+                } else {
+                    return res.status(409).send({ message: 'Write conflict error, please retry the transaction' });
+                }
+            }
+
+            if (error instanceof Stripe.errors.StripeError) {
+                console.error('Stripe error:', error);
+                return res.status(400).send({ message: `Payment failed: ${error.message}` });
+            }
+
+            return res.status(400).send({ message: 'Payment failed.' });
+        } finally {
+            session.endSession();
+        }
+    };
+
+    return await executeTransaction();
 };
